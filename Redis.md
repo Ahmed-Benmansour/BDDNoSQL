@@ -67,7 +67,7 @@ Maîtriser les fondamentaux de Redis en utilisant sa CLI (Interface en Ligne de 
 2. **Ensemble :** Gérer des éléments uniques.
    - Ajouter des identifiants :
      ```bash
-     SADD noms "Alice" "Bob" "Charlie"
+     SADD noms "Ahmed" "Othman"
      ```
    - Examiner les participants :
      ```bash
@@ -80,7 +80,7 @@ Maîtriser les fondamentaux de Redis en utilisant sa CLI (Interface en Ligne de 
 3. **Hashmap :** Organiser des informations groupées.
    - Enregistrer des données utilisateur :
      ```bash
-     HSET user:1 name "Alice" age 25 email "alice@example.com"
+     HSET user:1 name "Ahmed" age 22 email "alice@example.com"
      ```
    - Récupérer toutes les informations :
      ```bash
@@ -103,3 +103,12 @@ Maîtriser les fondamentaux de Redis en utilisant sa CLI (Interface en Ligne de 
   PFCOUNT visiteurs
   ```
 ---
+
+## Conclusion
+Redis se distingue par sa rapidité, sa simplicité et la richesse de ses structures de données.
+Que ce soit pour gérer du cache, du temps réel, des compteurs, ou des données temporaires,
+il constitue un outil puissant et polyvalent.  
+Ce TP avait pour objectif de vous familiariser avec les bases essentielles : installation,
+commandes fondamentales et manipulation des principales structures de données.  
+Vous êtes désormais prêt à explorer davantage les fonctionnalités avancées de Redis et l’intégrer
+dans des projets plus ambitieux.
