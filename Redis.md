@@ -75,12 +75,12 @@ Maîtriser les fondamentaux de Redis en utilisant sa CLI (Interface en Ligne de 
      ```
    - Retirer un identifiant :
      ```bash
-     SREM noms "Charlie"
+     SREM noms "Othman"
      ```
 3. **Hashmap :** Organiser des informations groupées.
    - Enregistrer des données utilisateur :
      ```bash
-     HSET user:1 name "Ahmed" age 22 email "alice@example.com"
+     HSET user:1 name "Ahmed" age 22 email "ahmed@example.com"
      ```
    - Récupérer toutes les informations :
      ```bash
