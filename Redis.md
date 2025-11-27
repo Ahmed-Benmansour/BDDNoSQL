@@ -33,14 +33,14 @@ Maîtriser les fondamentaux de Redis en utilisant sa CLI (Interface en Ligne de 
 **Objectif :** Comprendre les mécanismes de gestion des clés et valeurs.
 1. **Instancier une clé :**
    ```bash
-   SET nom "Alice"
+   SET nom "Ahmed"
    ```
    Résultat attendu : `OK`
 2. **Extraire une valeur :**
    ```bash
    GET nom
    ```
-   Résultat attendu : `"Alice"`
+   Résultat attendu : `"Ahmed"`
 3. **Mettre à jour la valeur d'une clé :**
    ```bash
    SET nom "Bob"
