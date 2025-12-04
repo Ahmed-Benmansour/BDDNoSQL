@@ -382,7 +382,3 @@ Ces deux TP réunis permettent d'acquérir une compréhension solide de MongoDB 
 - mises à jour ciblées,
 - création et analyse d'index,
 - utilisation concrète d'une collection réelle (films.json).
-
-MongoDB se distingue par sa **flexibilité**, sa **rapidité** et sa **facilité d’usage**.  
-Ce rapport constitue une base solide pour aller plus loin : pipelines complexes, optimisation, modélisation avancée, sharding et réplication.
-
