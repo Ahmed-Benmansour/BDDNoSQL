@@ -1,49 +1,31 @@
 # TP – Réplication MongoDB
-Module : Bases de données NoSQL  
-Sujet : TPReplicationMongoDb  
+**Module : Bases de données NoSQL**  
+**Sujet : TPReplicationMongoDb**
 
 ---
 
-## Introduction
+## Introduction générale
 
-Dans les systèmes de bases de données modernes, la disponibilité et la fiabilité des données sont des enjeux majeurs. Une panne matérielle, logicielle ou réseau peut entraîner une indisponibilité du service, voire une perte de données. MongoDB répond à ces problématiques grâce au mécanisme des **Replica Sets**, qui permettent la réplication automatique des données et la tolérance aux pannes.
+La réplication est un mécanisme essentiel dans les bases de données distribuées afin de garantir la disponibilité du service, la tolérance aux pannes et la fiabilité des données. MongoDB implémente la réplication à travers les *Replica Sets*, qui constituent la solution native de haute disponibilité du système.
 
-Ce TP a pour objectif de comprendre le fonctionnement des Replica Sets, d’étudier les rôles des différents nœuds, de mettre en place une architecture répliquée et d’analyser les comportements du système en cas de panne ou de bascule.
+Un Replica Set permet de maintenir plusieurs copies synchronisées des mêmes données sur différents nœuds. En cas de défaillance d’un serveur, le système est capable d’élire automatiquement un nouveau nœud principal et de continuer à fonctionner sans interruption majeure. Cette approche est particulièrement adaptée aux applications critiques nécessitant une continuité de service.
 
----
-
-## Principe de la réplication dans MongoDB
-
-La réplication dans MongoDB repose sur un **Replica Set**, c’est-à-dire un groupe de processus `mongod` qui maintiennent une copie synchronisée des mêmes données.
-
-Un Replica Set est composé de :
-- **un nœud Primary** ;
-- **un ou plusieurs nœuds Secondaries** ;
-- éventuellement **un arbitre (Arbiter)**.
-
-Les opérations d’écriture sont centralisées sur le Primary. Chaque écriture est enregistrée dans un journal appelé **oplog** (operations log). Les nœuds Secondaries lisent cet oplog et rejouent les opérations dans le même ordre afin de maintenir une copie cohérente de la base de données.
-
-La réplication dans MongoDB est **asynchrone**, ce qui signifie qu’un léger retard peut exister entre le Primary et les Secondaries.
+Ce TP a pour objectif de comprendre le fonctionnement des Replica Sets, d’analyser les rôles des différents nœuds, de mettre en œuvre une réplication avec MongoDB et d’étudier le comportement du système dans différents scénarios de panne.
 
 ---
 
-## Rôles des nœuds
+## Fonctionnement des Replica Sets MongoDB
 
-### Le Primary
+Un Replica Set est composé de plusieurs processus `mongod` qui partagent la même base de données. L’architecture repose sur un modèle à maître unique, garantissant une cohérence forte des écritures.
 
-Le Primary est le seul nœud autorisé à recevoir les opérations d’écriture. Il garantit une source unique de vérité, évitant ainsi les conflits de données. Par défaut, les lectures sont également dirigées vers le Primary afin d’assurer une cohérence maximale.
+Chaque Replica Set contient :
+- un **Primary**, qui reçoit toutes les écritures ;
+- un ou plusieurs **Secondaries**, qui répliquent les données ;
+- éventuellement un **Arbitre**, qui participe aux votes sans stocker de données.
 
-### Les Secondaries
+Les écritures sont d’abord appliquées sur le Primary, puis enregistrées dans un journal appelé **oplog**. Les Secondaries lisent cet oplog et rejouent les opérations dans le même ordre. Cette réplication est asynchrone, ce qui peut entraîner un léger décalage temporel entre les nœuds.
 
-Les Secondaries répliquent les données du Primary à partir de l’oplog. Ils peuvent :
-- devenir Primary lors d’une élection ;
-- servir des lectures si la configuration du client l’autorise.
-
-Ils jouent un rôle essentiel dans la tolérance aux pannes et la haute disponibilité.
-
-### L’Arbitre
-
-Un arbitre est un nœud qui ne stocke aucune donnée. Il participe uniquement aux votes lors des élections. Son rôle principal est de permettre l’obtention d’une majorité lorsqu’on souhaite conserver un nombre impair de votes sans ajouter un nœud de données supplémentaire.
+MongoDB intègre également des mécanismes d’élection automatique. Lorsqu’un Primary devient indisponible, une élection est déclenchée afin de désigner un nouveau Primary parmi les Secondaries disponibles, à condition qu’une majorité de votes soit atteinte.
 
 ---
 
@@ -55,7 +37,7 @@ Un arbitre est un nœud qui ne stocke aucune donnée. Il participe uniquement au
 docker network create mongo-cluster
 ```
 
-### Lancement des instances MongoDB
+### Lancement des conteneurs MongoDB
 
 ```bash
 docker run -d --name mongo1 --net mongo-cluster -p 27017:27017 mongo --replSet rs0 --bind_ip_all
@@ -86,62 +68,68 @@ rs.initiate({
 rs.status()
 ```
 
-Cette commande permet d’identifier le rôle de chaque nœud (PRIMARY, SECONDARY, ARBITER) et l’état global du cluster.
+---
+
+## Questions et réponses
+
+### Partie 1 — Compréhension de base
+
+**1. Qu’est-ce qu’un Replica Set dans MongoDB ?**  
+Un Replica Set est un ensemble de processus `mongod` qui répliquent les données d’une même base à partir de l’oplog afin d’assurer la haute disponibilité et la tolérance aux pannes.
+
+**2. Quel est le rôle du Primary ?**  
+Le Primary reçoit toutes les écritures, les applique aux données et les enregistre dans l’oplog.
+
+**3. Quel est le rôle des Secondaries ?**  
+Les Secondaries répliquent les données du Primary et peuvent être élus Primary en cas de panne.
+
+**4. Pourquoi MongoDB interdit les écritures sur un Secondary ?**  
+Pour éviter les conflits de données et garantir une source unique de vérité.
+
+**5. Qu’est-ce que la cohérence forte dans MongoDB ?**  
+Elle garantit que les lectures reflètent les écritures validées par une majorité des nœuds.
+
+**6. Différence entre readPreference primary et secondary ?**  
+Lire sur le Primary garantit des données à jour, tandis que lire sur un Secondary permet de répartir la charge avec un risque de retard.
+
+**7. Dans quel cas lire sur un Secondary ?**  
+Pour des usages non critiques comme les statistiques, rapports ou sauvegardes.
 
 ---
 
-## Élections et tolérance aux pannes
+### Partie 2 — Commandes et configuration
 
-Lorsqu’un Primary devient indisponible, les membres du Replica Set déclenchent automatiquement une **élection**. Pour qu’un nouveau Primary soit élu, une **majorité de votes** doit être atteinte.
+**8. Quelle commande initialise un Replica Set ?**  
+```javascript
+rs.initiate()
+```
 
-Les critères principaux utilisés lors d’une élection sont :
-- la disponibilité du nœud ;
-- sa priorité ;
-- la fraîcheur de son oplog.
+**9. Comment ajouter un nœud après l’initialisation ?**  
+```javascript
+rs.add("<host>:<port>")
+```
 
-Si aucune majorité n’est atteinte, le Replica Set reste sans Primary. Dans ce cas, les écritures sont impossibles, mais certaines lectures peuvent rester disponibles selon la configuration.
+**10. Quelle commande affiche l’état du Replica Set ?**  
+```javascript
+rs.status()
+```
 
----
+**11. Comment identifier le rôle d’un nœud ?**  
+Avec `db.isMaster()` ou `rs.status()`.
 
-## Lecture et cohérence des données
-
-MongoDB propose plusieurs options pour contrôler la cohérence :
-
-- **readPreference** : définit vers quel nœud les lectures sont envoyées (primary, secondary, etc.) ;
-- **readConcern** : définit le niveau de cohérence des données lues ;
-- **writeConcern** : définit le niveau d’accusé de réception requis pour une écriture.
-
-Pour une cohérence forte, il est recommandé d’utiliser :
-- `readPreference: "primary"` ;
-- `readConcern: "majority"` ;
-- `writeConcern: "majority"`.
-
----
-
-## Scénarios pratiques
-
-### Forcer une bascule du Primary
-
+**12. Quelle commande force la bascule du Primary ?**  
 ```javascript
 rs.stepDown(60)
 ```
 
-Cette commande force le Primary à se retirer temporairement, déclenchant une nouvelle élection.
+---
 
-### Ajouter un nœud secondaire
+### Partie 3 — Résilience et tolérance aux pannes
 
-```javascript
-rs.add("<host_ip>:<port>")
-```
+**13. Comment désigner un Arbitre et pourquoi ?**  
+Avec `rs.addArb()`, pour obtenir une majorité sans ajouter un nœud de données.
 
-### Retirer un nœud défectueux
-
-```javascript
-rs.remove("<host_ip>:<port>")
-```
-
-### Configurer un Secondary avec un délai de réplication
-
+**14. Comment configurer un Secondary avec un délai de réplication ?**  
 ```javascript
 rs.add({
   host: "mongo-delayed:27017",
@@ -151,29 +139,135 @@ rs.add({
 })
 ```
 
-Ce type de nœud permet de conserver une copie retardée des données, utile pour la récupération après erreur humaine.
+**15. Que se passe-t-il si le Primary tombe sans majorité ?**  
+Aucun Primary n’est élu et les écritures sont bloquées.
+
+**16. Comment MongoDB choisit-il un nouveau Primary ?**  
+Selon la priorité, la disponibilité et la fraîcheur de l’oplog.
+
+**17. Qu’est-ce qu’une élection ?**  
+Un processus automatique de vote pour élire un nouveau Primary.
+
+**18. Que signifie l’auto-dégradation ?**  
+Un Primary se dégrade en Secondary s’il perd la majorité.
+
+**19. Pourquoi un nombre impair de nœuds ?**  
+Pour faciliter l’obtention d’une majorité.
+
+**20. Conséquences d’une partition réseau ?**  
+Seule la partition majoritaire conserve un Primary.
 
 ---
 
-## Surveillance de la réplication
+### Partie 4 — Scénarios pratiques
 
-MongoDB fournit plusieurs commandes pour surveiller l’état de la réplication :
+**21. Panne du Primary avec un arbitre présent**  
+Le Secondary restant est élu Primary grâce à la majorité.
 
+**22. Utilité d’un Secondary avec slaveDelay**  
+Permet de récupérer des données après une erreur humaine.
+
+**23. Lecture toujours à jour**  
+`readPreference: primary`, `readConcern: majority`, `writeConcern: majority`.
+
+**24. Écriture confirmée par au moins deux nœuds**  
 ```javascript
-rs.printSlaveReplicationInfo()
-db.printReplicationInfo()
+writeConcern: { w: 2 }
 ```
 
-Les logs MongoDB permettent également d’observer en temps réel les événements liés aux élections et à la réplication.
+**25. Lecture obsolète depuis un Secondary**  
+Due à la réplication asynchrone.
+
+**26. Vérifier le Primary actuel**  
+```javascript
+rs.status()
+```
+
+**27. Forcer une bascule manuelle**  
+```javascript
+rs.stepDown(60)
+```
+
+**28. Ajouter un nouveau Secondary**  
+```javascript
+rs.add("<host>:<port>")
+```
+
+**29. Retirer un nœud défectueux**  
+```javascript
+rs.remove("<host>:<port>")
+```
+
+**30. Configurer un Secondary caché**  
+Définir `hidden: true` et `priority: 0`.
+
+**31. Modifier la priorité d’un nœud**  
+```javascript
+cfg = rs.conf()
+cfg.members[0].priority = 10
+rs.reconfig(cfg)
+```
+
+**32. Vérifier le retard de réplication**  
+```javascript
+rs.printSlaveReplicationInfo()
+```
+
+---
+
+### Questions complémentaires
+
+**33. Que fait rs.freeze() ?**  
+Empêche temporairement un nœud de devenir Primary.
+
+**34. Comment redémarrer sans perdre la configuration ?**  
+La configuration est stockée dans la base `local`.
+
+**35. Comment surveiller la réplication ?**  
+Avec `rs.status()`, `rs.printSlaveReplicationInfo()` et les logs.
+
+**37. Qu’est-ce qu’un Arbitre ?**  
+Un nœud votant sans données.
+
+**38. Vérifier la latence de réplication**  
+```javascript
+rs.printSlaveReplicationInfo()
+```
+
+**39. Afficher le retard de réplication**  
+```javascript
+rs.printSlaveReplicationInfo()
+```
+
+**40. Réplication synchrone vs asynchrone**  
+MongoDB utilise une réplication asynchrone.
+
+**41. Peut-on modifier la configuration sans redémarrer ?**  
+Oui, avec `rs.reconfig()`.
+
+**42. Secondary très en retard**  
+Il ne peut pas être élu Primary.
+
+**43. Gestion des conflits de données**  
+Ils sont évités par l’unicité du Primary.
+
+**44. Peut-on avoir plusieurs Primary ?**  
+Non, grâce au mécanisme de majorité.
+
+**45. Pourquoi éviter les écritures sur un Secondary ?**  
+Elles seraient écrasées par la réplication.
+
+**46. Conséquences d’un réseau instable**  
+Élections fréquentes et dégradation des performances.
 
 ---
 
 ## Conclusion
 
-Ce TP a permis d’acquérir une compréhension approfondie du mécanisme de réplication de MongoDB. Les Replica Sets constituent un élément central pour assurer la haute disponibilité et la tolérance aux pannes. Une bonne configuration des nœuds, des priorités et des options de cohérence est essentielle pour répondre aux exigences des applications critiques en production.
+Ce TP a permis de comprendre en profondeur le fonctionnement des Replica Sets MongoDB. Ces mécanismes sont indispensables pour concevoir des systèmes distribués fiables, capables de résister aux pannes tout en garantissant la cohérence des données.
 
 ---
 
 ## Références
 
-- Documentation officielle MongoDB : https://www.mongodb.com/docs/manual
+- https://www.mongodb.com/docs/manual
