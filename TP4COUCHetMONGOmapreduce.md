@@ -246,8 +246,8 @@ docker volume create couchdb_data
 
 docker run \
   --name couchdb \
-  -e COUCHDB_USER=ethan \
-  -e COUCHDB_PASSWORD=nicolas \
+  -e COUCHDB_USER=ahmed \
+  -e COUCHDB_PASSWORD=ben \
   -p 5984:5984 \
   -v couchdb_data:/opt/couchdb/data \
   -d couchdb
@@ -262,19 +262,19 @@ Interface Fauxton :
 
 ### Création de base
 ```bash
-curl -X PUT http://ethan:nicolas@localhost:5984/films
+curl -X PUT http://ahmed:ben@localhost:5984/films
 ```
 
 ### Insertion simple
 ```bash
-curl -X POST http://ethan:nicolas@localhost:5984/films \
+curl -X POST http://ahmed:ben@localhost:5984/films \
  -H "Content-Type: application/json" \
  -d '{"title":"Inception","year":2010}'
 ```
 
 ### Insertion en lot
 ```bash
-curl -X POST http://ethan:nicolas@localhost:5984/films/_bulk_docs \
+curl -X POST http://ahmed:ben@localhost:5984/films/_bulk_docs \
  -H "Content-Type: application/json" \
  -d @films_couchdb.json
 ```
